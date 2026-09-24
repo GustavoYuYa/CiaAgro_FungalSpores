@@ -3,8 +3,10 @@ from torch import nn
 from einops import rearrange
 from einops.layers.torch import Rearrange
 
+
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
+
 
 def posemb_sincos_2d(h, w, dim, temperature: int = 10000, dtype = torch.float32):
     y, x = torch.meshgrid(torch.arange(h), torch.arange(w), indexing="ij")
@@ -21,7 +23,6 @@ def posemb_sincos_2d(h, w, dim, temperature: int = 10000, dtype = torch.float32)
 
     return pe.type(dtype)
 
-# classes
 
 class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim):
@@ -34,6 +35,7 @@ class FeedForward(nn.Module):
         )
     def forward(self, x):
         return self.net(x)
+
 
 class Attention(nn.Module):
     def __init__(self, dim, heads = 8, dim_head = 64):
@@ -62,6 +64,7 @@ class Attention(nn.Module):
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out)
 
+
 class Transformer(nn.Module):
     def __init__(self, dim, depth, heads, dim_head, mlp_dim):
         super().__init__()
@@ -77,6 +80,7 @@ class Transformer(nn.Module):
             x = attn(x) + x
             x = ff(x) + x
         return self.norm(x)
+
 
 class SimpleViT(nn.Module):
 

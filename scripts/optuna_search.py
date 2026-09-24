@@ -1,0 +1,223 @@
+import optuna
+import torch
+import torch.optim as optim
+import numpy as np
+import yaml
+
+from src.models.simplevit import SimpleViT
+from src.datasets.spore_dataset import importar_base
+from src.utils.seed import set_seed
+from src.utils.scheduler import get_scheduler
+from src.utils.compute_statistics import calcular_mean_std
+from src.datasets.transforms import stats_transform
+from src.datasets.transforms import base_transform
+from src.training.trainer import train_model
+from src.datasets.spore_dataset import criar_splits
+
+
+# --------------------------------------------------
+# Configuration
+# --------------------------------------------------
+
+NUM_CLASSES = 3
+IMAGE_SIZE = 64
+BATCH_SIZE = 64
+EPOCHS = 100
+WARMUP_EPOCHS = 20
+WEIGHT_DECAY = 0.05
+
+N_TRIALS = 30
+
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
+"""
+train_files = np.load(r"C:\Analise_Esporos_2026\Modelo_Classificacao_4_classes\FilesLabels_Filtrado\train_files_Filtrado.npy", allow_pickle=True).tolist()
+val_files = np.load(r"C:\Analise_Esporos_2026\Modelo_Classificacao_4_classes\FilesLabels_Filtrado\val_files_Filtrado.npy", allow_pickle=True).tolist()
+train_labels = np.load(r"C:\Analise_Esporos_2026\Modelo_Classificacao_4_classes\FilesLabels_Filtrado\train_labels_Filtrado.npy", allow_pickle=True).tolist()
+val_labels = np.load(r"C:\Analise_Esporos_2026\Modelo_Classificacao_4_classes\FilesLabels_Filtrado\val_labels_Filtrado.npy", allow_pickle=True).tolist()
+"""
+
+set_seed(42)
+
+train_files, train_labels, val_files, val_labels, _, _ = criar_splits()
+
+_, _, _, stats_loader = importar_base(train_files, train_labels, None, None, None, None, stats_transform())
+
+mean, std = calcular_mean_std(stats_loader)
+
+# --------------------------------------------------
+# Objective function
+# --------------------------------------------------
+
+def objective(trial):
+
+    # Hyperparameters
+    patch_size = trial.suggest_categorical(
+        "patch_size",
+        [4, 8]
+    )
+
+    depth = trial.suggest_int(
+        "depth",
+        3,
+        8
+    )
+
+    heads = trial.suggest_categorical(
+        "heads",
+        [4, 6, 8, 12, 16]
+    )
+
+    dim_head = trial.suggest_categorical(
+        "dim_head",
+        [16, 32, 64]
+    )
+
+    mlp_dim = trial.suggest_categorical(
+        "mlp_dim",
+        [256, 384, 512, 1024]
+    )
+
+    dim = heads * dim_head
+
+    learning_rate = trial.suggest_float(
+        "learning_rate",
+        1e-5,
+        5e-3,
+        log=True
+    )
+
+    # Seed
+    set_seed(trial.number)
+
+    # --------------------------------------------------
+    # Dataset
+    # --------------------------------------------------
+
+    train_loader, val_loader, _, _ = importar_base(train_files, train_labels, val_files, val_labels, None, None, base_transform(mean, std))
+
+    # --------------------------------------------------
+    # Model
+    # --------------------------------------------------
+
+    model = SimpleViT(
+        image_size=IMAGE_SIZE,
+        patch_size=patch_size,
+        num_classes=NUM_CLASSES,
+        dim=dim,
+        depth=depth,
+        heads=heads,
+        mlp_dim=mlp_dim,
+        dim_head=dim_head
+    ).to(DEVICE)
+
+    # --------------------------------------------------
+    # Optimizer
+    # --------------------------------------------------
+
+    optimizer = optim.AdamW(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=WEIGHT_DECAY
+    )
+
+    scheduler = get_scheduler(
+        optimizer,
+        WARMUP_EPOCHS,
+        EPOCHS
+    )
+
+    criterion = torch.nn.CrossEntropyLoss()
+
+    best_model_state, best_val_loss, history = train_model(
+        model=model,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        criterion=criterion,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        epochs=EPOCHS,
+        device=DEVICE
+    )
+
+    return best_val_loss
+
+
+# --------------------------------------------------
+# Main
+# --------------------------------------------------
+
+if __name__ == "__main__":
+
+    study = optuna.create_study(
+        direction="minimize",
+        study_name="simplevit_3class",
+        storage="sqlite:///optuna_simplevit.db",
+        load_if_exists=True
+    )
+
+    study.optimize(
+        objective,
+        n_trials=N_TRIALS
+    )
+
+    best_params = study.best_trial.params
+
+    best_config = {
+        "experiment": {
+            "name": "simplevit_3class",
+            "num_classes": NUM_CLASSES,
+            "image_size": IMAGE_SIZE,
+        },
+
+        "model": {
+            "patch_size": best_params["patch_size"],
+            "depth": best_params["depth"],
+            "heads": best_params["heads"],
+            "dim_head": best_params["dim_head"],
+            "dim": (
+                best_params["heads"] *
+                best_params["dim_head"]
+            ),
+            "mlp_dim": best_params["mlp_dim"],
+        },
+
+        "training": {
+            "batch_size": BATCH_SIZE,
+            "epochs": EPOCHS,
+            "warmup_epochs": WARMUP_EPOCHS,
+            "weight_decay": WEIGHT_DECAY,
+            "learning_rate": best_params["learning_rate"],
+        },
+
+        "normalization": {
+            "mean": mean.tolist(),
+            "std": std.tolist(),
+        },
+
+        "optuna": {
+            "n_trials": N_TRIALS,
+            "best_trial": study.best_trial.number,
+            "best_validation_loss": study.best_trial.value,
+        },
+
+        "optimizer": {
+            "name": "AdamW",
+            "weight_decay": WEIGHT_DECAY,
+        },
+
+        "scheduler": {
+            "name": "warmup_cosine",
+            "warmup_epochs": WARMUP_EPOCHS,
+        }
+
+    }
+
+    with open("configs/best_simplevit.yaml", "w") as f:
+        yaml.dump(
+            best_config,
+            f,
+            sort_keys=False
+        )

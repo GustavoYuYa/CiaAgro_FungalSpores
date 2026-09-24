@@ -1,0 +1,36 @@
+experiment:
+  name: simplevit_3class
+  num_classes: 3
+  image_size: 64
+model:
+  patch_size: 4
+  depth: 3
+  heads: 12
+  dim_head: 64
+  dim: 768
+  mlp_dim: 1024
+training:
+  batch_size: 64
+  epochs: 10
+  warmup_epochs: 2
+  weight_decay: 0.05
+  learning_rate: 0.0041324982501943575
+normalization:
+  mean:
+  - 0.7295021414756775
+  - 0.7089899778366089
+  - 0.7126163840293884
+  std:
+  - 0.1735173612833023
+  - 0.19369138777256012
+  - 0.19804951548576355
+optuna:
+  n_trials: 1
+  best_trial: 1
+  best_validation_loss: 0.07297867237745474
+optimizer:
+  name: AdamW
+  weight_decay: 0.05
+scheduler:
+  name: warmup_cosine
+  warmup_epochs: 2
