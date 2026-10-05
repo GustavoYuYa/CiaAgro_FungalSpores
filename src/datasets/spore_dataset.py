@@ -26,21 +26,27 @@ class EsporosDataset(Dataset):
 
 
 def criar_splits():
-    caminho = r"C:\Analise_Esporos_2026\Dataset_Segmentado_Preto\DATASET_NORMAL_FILTRADO"
+    caminho = r"D:\CiaAgro2026\dataset_huggingface\filtered_cropped_images\Normal"
 
     arquivos = []
     labels = []
 
     for i, pasta in enumerate(sorted(os.listdir(caminho))):
 
-        if pasta in "puccinias":
-            continue
-
         pasta_path = os.path.join(caminho, pasta)
 
-        for arquivo in os.listdir(pasta_path):
-            arquivos.append(os.path.join(pasta_path, arquivo))
-            labels.append(i)
+        for subpasta in sorted(os.listdir(pasta_path)):
+
+                """
+                if pasta in "puccinias":
+                    continue
+                """
+
+                subpasta_path = os.path.join(pasta_path, subpasta)
+
+                for arquivo in os.listdir(subpasta_path):
+                    arquivos.append(os.path.join(subpasta_path, arquivo))
+                    labels.append(i)
 
     train_files, test_files, train_labels, test_labels = train_test_split(
         arquivos, labels,

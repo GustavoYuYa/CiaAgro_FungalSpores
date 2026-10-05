@@ -144,12 +144,15 @@ def objective(trial):
 
     return best_val_loss
 
-
 # --------------------------------------------------
 # Main
 # --------------------------------------------------
 
 if __name__ == "__main__":
+
+    # --------------------------------------------------
+    # Create / load Optuna study
+    # --------------------------------------------------
 
     study = optuna.create_study(
         direction="minimize",
@@ -158,14 +161,111 @@ if __name__ == "__main__":
         load_if_exists=True
     )
 
-    study.optimize(
-        objective,
-        n_trials=N_TRIALS
+    print(f"\nExisting trials: {len(study.trials)}")
+
+    for trial in study.trials:
+        print(
+            f"Trial {trial.number}: "
+            f"{trial.state.name} "
+            f"{trial.value}"
+        )
+
+    # --------------------------------------------------
+    # Mark interrupted trials as FAILED
+    # --------------------------------------------------
+
+    running_trials = [
+        trial
+        for trial in study.trials
+        if trial.state == optuna.trial.TrialState.RUNNING
+    ]
+
+    if running_trials:
+
+        print("\nInterrupted trials detected:")
+
+        for trial in running_trials:
+
+            print(
+                f"Trial {trial.number} "
+                f"-> marking as FAILED"
+            )
+
+            study.tell(
+                trial.number,
+                state=optuna.trial.TrialState.FAIL
+            )
+
+    # --------------------------------------------------
+    # Continue until we have N_TRIALS COMPLETED trials
+    # --------------------------------------------------
+
+    while True:
+
+        completed_trials = [
+            trial
+            for trial in study.trials
+            if trial.state == optuna.trial.TrialState.COMPLETE
+        ]
+
+        n_completed = len(completed_trials)
+
+        print(
+            f"\nCompleted trials: "
+            f"{n_completed}/{N_TRIALS}"
+        )
+
+        # Target reached
+        if n_completed >= N_TRIALS:
+            break
+
+        trials_remaining = N_TRIALS - n_completed
+
+        print(
+            f"Running {trials_remaining} "
+            f"more trial(s)..."
+        )
+
+        study.optimize(
+            objective,
+            n_trials=trials_remaining
+        )
+
+    # --------------------------------------------------
+    # Get best trial
+    # --------------------------------------------------
+
+    best_trial = study.best_trial
+    best_params = best_trial.params
+
+    print("\n========================================")
+    print("OPTUNA SEARCH FINISHED")
+    print("========================================")
+
+    print(
+        f"Completed trials: {n_completed}"
     )
 
-    best_params = study.best_trial.params
+    print(
+        f"Best trial: {best_trial.number}"
+    )
+
+    print(
+        f"Best validation loss: "
+        f"{best_trial.value:.6f}"
+    )
+
+    print("\nBest hyperparameters:")
+
+    for key, value in best_params.items():
+        print(f"{key}: {value}")
+
+    # --------------------------------------------------
+    # Create final configuration
+    # --------------------------------------------------
 
     best_config = {
+
         "experiment": {
             "name": "simplevit_3class",
             "num_classes": NUM_CLASSES,
@@ -178,8 +278,8 @@ if __name__ == "__main__":
             "heads": best_params["heads"],
             "dim_head": best_params["dim_head"],
             "dim": (
-                best_params["heads"] *
-                best_params["dim_head"]
+                best_params["heads"]
+                * best_params["dim_head"]
             ),
             "mlp_dim": best_params["mlp_dim"],
         },
@@ -198,9 +298,11 @@ if __name__ == "__main__":
         },
 
         "optuna": {
-            "n_trials": N_TRIALS,
-            "best_trial": study.best_trial.number,
-            "best_validation_loss": study.best_trial.value,
+            "study_name": "simplevit_3class",
+            "n_trials_target": N_TRIALS,
+            "n_trials_completed": n_completed,
+            "best_trial": best_trial.number,
+            "best_validation_loss": best_trial.value,
         },
 
         "optimizer": {
@@ -212,10 +314,17 @@ if __name__ == "__main__":
             "name": "warmup_cosine",
             "warmup_epochs": WARMUP_EPOCHS,
         }
-
     }
 
-    with open("configs/best_simplevit.yaml", "w") as f:
+    # --------------------------------------------------
+    # Save YAML
+    # --------------------------------------------------
+
+    with open(
+        "configs/best_simplevit.yaml",
+        "w"
+    ) as f:
+
         yaml.dump(
             best_config,
             f,
