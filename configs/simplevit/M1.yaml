@@ -1,0 +1,36 @@
+experiment:
+  name: M1
+  description: "SimpleViT baseline with original images"
+
+model:
+  image_size: 64
+  num_classes: 3
+
+  patch_size: 4
+  dim: 256
+  depth: 4
+  heads: 16
+  dim_head: 16
+  mlp_dim: 512
+
+training:
+  batch_size: 64
+  epochs: 100
+  warmup_epochs: 20
+
+  learning_rate: 0.00017387407693060297
+  weight_decay: 0.05
+
+data:
+  condition: "normal"
+  weighted_sampler: false
+  augmentation: false
+  noise_background: false
+  mixed_training: false
+
+normalization:
+  method:
+  mean:
+  std:
+
+seed: 42

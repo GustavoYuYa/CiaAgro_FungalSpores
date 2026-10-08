@@ -74,6 +74,7 @@ def train_model(
 
     best_val_loss = float("inf")
     best_model_state = None
+    best_epoch = None
 
     history = {
         "train_loss": [],
@@ -119,6 +120,8 @@ def train_model(
                 model.state_dict()
             )
 
+            best_epoch = epoch + 1
+
         print(
             f"Epoch [{epoch + 1}/{epochs}] "
             f"Train Loss: {train_loss:.4f} "
@@ -126,4 +129,4 @@ def train_model(
             f"Val Acc: {val_accuracy:.4f}"
         )
 
-    return best_model_state, best_val_loss, history
+    return best_model_state, best_val_loss, best_epoch, history

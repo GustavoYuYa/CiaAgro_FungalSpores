@@ -9,10 +9,9 @@ from src.datasets.spore_dataset import importar_base
 from src.utils.seed import set_seed
 from src.utils.scheduler import get_scheduler
 from src.utils.compute_statistics import calcular_mean_std
-from src.datasets.transforms import stats_transform
+from src.datasets.transforms import transform_wout_normalize
 from src.datasets.transforms import base_transform
 from src.training.trainer import train_model
-from src.datasets.spore_dataset import criar_splits
 
 
 # --------------------------------------------------
@@ -32,6 +31,8 @@ DEVICE = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 
+DATASET_ROOT = r"C:\GitHub_CiaAgro\dataset_huggingface"
+
 """
 train_files = np.load(r"C:\Analise_Esporos_2026\Modelo_Classificacao_4_classes\FilesLabels_Filtrado\train_files_Filtrado.npy", allow_pickle=True).tolist()
 val_files = np.load(r"C:\Analise_Esporos_2026\Modelo_Classificacao_4_classes\FilesLabels_Filtrado\val_files_Filtrado.npy", allow_pickle=True).tolist()
@@ -39,11 +40,12 @@ train_labels = np.load(r"C:\Analise_Esporos_2026\Modelo_Classificacao_4_classes\
 val_labels = np.load(r"C:\Analise_Esporos_2026\Modelo_Classificacao_4_classes\FilesLabels_Filtrado\val_labels_Filtrado.npy", allow_pickle=True).tolist()
 """
 
-set_seed(42)
+train_files = np.load(r"C:\GitHub_CiaAgro\dataset_huggingface\splits\normal\train_files.npy", allow_pickle=True).tolist()
+train_labels = np.load(r"C:\GitHub_CiaAgro\dataset_huggingface\splits\normal\train_labels.npy", allow_pickle=True).tolist()
+val_files = np.load(r"C:\GitHub_CiaAgro\dataset_huggingface\splits\normal\val_files.npy", allow_pickle=True).tolist()
+val_labels = np.load(r"C:\GitHub_CiaAgro\dataset_huggingface\splits\normal\val_labels.npy", allow_pickle=True).tolist()
 
-train_files, train_labels, val_files, val_labels, _, _ = criar_splits()
-
-_, _, _, stats_loader = importar_base(train_files, train_labels, None, None, None, None, stats_transform())
+_, _, _, stats_loader = importar_base(train_files, train_labels, None, None, None, None, DATASET_ROOT, transform_wout_normalize())
 
 mean, std = calcular_mean_std(stats_loader)
 
@@ -96,7 +98,7 @@ def objective(trial):
     # Dataset
     # --------------------------------------------------
 
-    train_loader, val_loader, _, _ = importar_base(train_files, train_labels, val_files, val_labels, None, None, base_transform(mean, std))
+    train_loader, val_loader, _, _ = importar_base(train_files, train_labels, val_files, val_labels, None, None, DATASET_ROOT, base_transform(mean, std))
 
     # --------------------------------------------------
     # Model
@@ -131,7 +133,7 @@ def objective(trial):
 
     criterion = torch.nn.CrossEntropyLoss()
 
-    best_model_state, best_val_loss, history = train_model(
+    best_model_state, best_val_loss, best_epochs, history = train_model(
         model=model,
         train_loader=train_loader,
         val_loader=val_loader,
