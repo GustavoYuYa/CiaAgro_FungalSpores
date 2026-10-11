@@ -131,8 +131,8 @@ class EsporosDatasetNoise(Dataset):
         self.apply_masked_jitter = apply_masked_jitter
 
         if mean is not None and std is not None:
-            self.mean = mean.view(3, 1, 1)
-            self.std = std.view(3, 1, 1)
+            self.mean = torch.as_tensor(mean, dtype=torch.float32).view(3, 1, 1)
+            self.std = torch.as_tensor(std, dtype=torch.float32).view(3, 1, 1)
         else:
             self.mean = None
             self.std = None
