@@ -21,7 +21,7 @@ from src.datasets.transforms import noise_transform_train
 from src.datasets.spore_dataset import importar_baseMixed
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-DATASET_ROOT = "C:\GitHub_CiaAgro\dataset_huggingface"
+DATASET_ROOT = r"C:\GitHub_CiaAgro\dataset_huggingface"
 
 set_seed(42)
 
@@ -159,6 +159,8 @@ def main():
                                                             dataset_root=DATASET_ROOT, train_transform=noise_transform_train(), test_transform=transform_wout_normalize(),
                                                             stats=False, mean=mean, std=std)
 
+    # M4: model with weighted sampler + data augmentation + mixed dataset (normal images and segmented noise images)
+
     elif condition == "mixed":
 
         train_files = np.load(r"C:\GitHub_CiaAgro\dataset_huggingface\splits\normal\train_files.npy", allow_pickle=True)
@@ -186,7 +188,7 @@ def main():
 
     else:
 
-        print(f"Invalid <condition> value: {condition}")
+        raise ValueError(f"Invalid data condition: {condition!r}")
 
     best_model_state, best_val_loss, best_epoch, history = train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, training_config["epochs"], DEVICE)
 

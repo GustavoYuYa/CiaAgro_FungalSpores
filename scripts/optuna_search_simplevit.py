@@ -55,6 +55,9 @@ mean, std = calcular_mean_std(stats_loader)
 
 def objective(trial):
 
+    # Seed
+    set_seed(trial.number)
+
     # Hyperparameters
     patch_size = trial.suggest_categorical(
         "patch_size",
@@ -90,9 +93,6 @@ def objective(trial):
         5e-3,
         log=True
     )
-
-    # Seed
-    set_seed(trial.number)
 
     # --------------------------------------------------
     # Dataset
@@ -327,7 +327,7 @@ if __name__ == "__main__":
         "w"
     ) as f:
 
-        yaml.dump(
+        yaml.safe_dump(
             best_config,
             f,
             sort_keys=False

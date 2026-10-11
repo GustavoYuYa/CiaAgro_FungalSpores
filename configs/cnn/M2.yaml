@@ -1,0 +1,36 @@
+experiment:
+  name: M2
+  description: "CNN with weighted random sampler, data augmentation and original images"
+
+model:
+  image_size: 64
+  num_classes: 3
+
+  channels:
+    - 32
+    - 64
+    - 128
+    - 256
+  dropout: 0.23486534316061997
+
+training:
+  batch_size: 64
+  epochs: 100
+  warmup_epochs: 20
+
+  weight_decay: 0.05
+  learning_rate: 7.104979107277809e-05
+
+data:
+  condition: "normal"
+  weighted_sampler: true
+  augmentation: true
+  noise_background: false
+  mixed_training: false
+
+normalization:
+  method:
+  mean:
+  std:
+
+seed: 42

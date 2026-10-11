@@ -1,0 +1,38 @@
+experiment:
+  name: cnn_3class
+  num_classes: 3
+  image_size: 64
+model:
+  channels:
+  - 32
+  - 64
+  - 128
+  - 256
+  dropout: 0.23486534316061997
+training:
+  batch_size: 64
+  epochs: 100
+  warmup_epochs: 20
+  weight_decay: 0.05
+  learning_rate: 7.104979107277809e-05
+normalization:
+  mean:
+  - 0.7295577526092529
+  - 0.7090697288513184
+  - 0.7126867771148682
+  std:
+  - 0.1736087054014206
+  - 0.19379368424415588
+  - 0.19819287955760956
+optuna:
+  study_name: cnn_3class
+  n_trials_target: 30
+  n_trials_completed: 30
+  best_trial: 20
+  best_validation_loss: 0.0025497746894416196
+optimizer:
+  name: AdamW
+  weight_decay: 0.05
+scheduler:
+  name: warmup_cosine
+  warmup_epochs: 20

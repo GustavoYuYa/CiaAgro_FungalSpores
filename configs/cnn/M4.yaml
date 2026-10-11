@@ -1,0 +1,41 @@
+experiment:
+  name: M4
+  description: "CNN with weighted random sampler, data augmentation and train set mixed - normal images and segmented images with gaussian noise stochastic background"
+
+model:
+  image_size: 64
+  num_classes: 3
+
+  channels:
+    - 32
+    - 64
+    - 128
+    - 256
+  dropout: 0.23486534316061997
+
+training:
+  batch_size: 64
+  epochs: 100
+  warmup_epochs: 20
+
+  weight_decay: 0.05
+  learning_rate: 7.104979107277809e-05
+
+data:
+  condition: "mixed"
+  weighted_sampler: true
+  augmentation: true
+  noise_background:
+    enabled: true
+    deterministic_train: false
+    deterministic_validation: true
+    determinitisc_test: true
+    distributions: "- normal_0.5_0.2"
+  mixed_training: true
+
+normalization:
+  method:
+  mean:
+  std:
+
+seed: 42
