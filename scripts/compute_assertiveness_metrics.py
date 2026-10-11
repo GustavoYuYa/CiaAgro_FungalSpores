@@ -11,6 +11,7 @@ from openpyxl.utils import get_column_letter
 
 from src.evaluation.metrics import generate_metrics
 from src.models.simplevit import SimpleViT
+from src.models.cnn import CNN
 from src.datasets.spore_dataset import importar_base, importar_baseNoise
 from src.datasets.transforms import (
     transform_wout_normalize,
@@ -21,8 +22,10 @@ from src.datasets.transforms import (
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 DATASET_ROOT = r"C:\GitHub_CiaAgro\dataset_huggingface"
-EXPERIMENTS_ROOT = os.path.join("experiments", "simplevit")
-
+# simplevit path
+# EXPERIMENTS_ROOT = os.path.join("experiments", "simplevit")
+# cnn path
+EXPERIMENTS_ROOT = os.path.join("experiments", "cnn")
 
 test_files = np.load(r"C:\GitHub_CiaAgro\dataset_huggingface\splits\normal\test_files.npy", allow_pickle=True)
 test_files_black = np.load(r"C:\GitHub_CiaAgro\dataset_huggingface\splits\segmented_black\test_files.npy", allow_pickle=True)
@@ -34,15 +37,23 @@ def build_model(config):
 
     cfg = config["model"]
 
-    return SimpleViT(
-        image_size=cfg["image_size"],
-        patch_size=cfg["patch_size"],
+    # loading simplevit model
+    # return SimpleViT(
+    #     image_size=cfg["image_size"],
+    #     patch_size=cfg["patch_size"],
+    #     num_classes=cfg["num_classes"],
+    #     dim=cfg["dim"],
+    #     depth=cfg["depth"],
+    #     heads=cfg["heads"],
+    #     mlp_dim=cfg["mlp_dim"],
+    #     dim_head=cfg["dim_head"],
+    # ).to(DEVICE)
+
+    # loading cnn model
+    return CNN(
         num_classes=cfg["num_classes"],
-        dim=cfg["dim"],
-        depth=cfg["depth"],
-        heads=cfg["heads"],
-        mlp_dim=cfg["mlp_dim"],
-        dim_head=cfg["dim_head"],
+        channels=cfg["channels"],
+        dropout=cfg["dropout"]
     ).to(DEVICE)
 
 
